@@ -249,6 +249,8 @@ int nw_get_batadv_neighbor_stats(struct nw_batadv_neighbor_stats *stats) {
 		return -1;
 	}
 
+	log_set_level(LL_DEBUG);
+
 	log_debug("nw_get_batadv_neighbor_stats() found algoname %s", algoname);
 	if (strcmp(algoname, "BATMAN_IV") == 0) {
 		ret = batadv_genl_query("bat0", BATADV_CMD_GET_ORIGINATORS,
