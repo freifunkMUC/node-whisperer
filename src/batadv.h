@@ -13,3 +13,4 @@ struct nw_batadv_neighbor_stats {
 
 int nw_get_batadv_neighbor_stats(struct nw_batadv_neighbor_stats *stats);
 int nw_get_batadv_clients();
+int get_algoname_netlink(char *algoname, size_t algoname_len);
