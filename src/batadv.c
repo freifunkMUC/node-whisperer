@@ -16,6 +16,7 @@
 #include <net/if.h>
 
 #include "batadv.h"
+#include "log.h"
 
 struct neigh_netlink_opts {
 	int originator_count;
@@ -248,6 +249,7 @@ int nw_get_batadv_neighbor_stats(struct nw_batadv_neighbor_stats *stats) {
 		return -1;
 	}
 
+	log_debug("nw_get_batadv_neighbor_stats() found algoname %s", algoname);
 	if (strcmp(algoname, "BATMAN_IV") == 0) {
 		ret = batadv_genl_query("bat0", BATADV_CMD_GET_ORIGINATORS,
 								parse_orig_list_netlink_cb, NLM_F_DUMP,
