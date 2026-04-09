@@ -221,7 +221,7 @@ int get_algoname_netlink(char *algoname, size_t algoname_len) {
 	int ret;
 
 	ret = batadv_genl_query("bat0", BATADV_CMD_GET_MESH,
-							get_algoname_netlink_cb, NLM_F_DUMP,
+							get_algoname_netlink_cb, 0,
 							&opts.query_opts);
 	if (ret < 0) {
 		log_error("get_algoname_netlink() query BATADV_CMD_GET_MESH failed with %d", ret);
