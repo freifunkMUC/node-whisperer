@@ -326,6 +326,7 @@ int nw_get_batadv_clients() {
 							parse_clients_list_netlink_cb, NLM_F_DUMP,
 							&opts.query_opts);
 	if (ret < 0) {
+		log_error("nw_get_batadv_clients() query BATADV_CMD_GET_TRANSTABLE_LOCAL failed with %d", ret);
 		return -1;
 	}
 
