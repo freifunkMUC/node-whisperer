@@ -70,6 +70,10 @@ int nw_interface_update(struct ubus_context *ctx, char *vendor_elements)
 		if (ret) {
 			log_error("Failed to send vendor elements to id=%d name=%s error=%s", iface->ubus.id, iface->ubus.name, ubus_strerror(ret));
 
+			/* On timeout, skip the reset - hostapd won't respond to that either */
+			if (ret == UBUS_STATUS_TIMEOUT)
+				continue;
+
 			/* Delete element */
 			blob_buf_init(&b, 0);
 			blobmsg_add_string(&b, "vendor_elements", "");
