@@ -215,12 +215,10 @@ int node_whisperer_information_firmware_version_collect(uint8_t *buffer, size_t 
 	size_t firmware_version_len;
 	int ret;
 
-	// ret = nw_read_file("/lib/gluon/release", &firmware_version, &firmware_version_len);
-	ret = get_algoname_netlink(firmware_version, buffer_size);
+	ret = nw_read_file("/lib/gluon/release", &firmware_version, &firmware_version_len);
 	if (ret) {
 		return ret;
 	}
-	firmware_version_len = buffer_size;
 
 	if (firmware_version_len > buffer_size) {
 		free(firmware_version);

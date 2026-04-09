@@ -150,8 +150,6 @@ static int parse_neigh_list_netlink_cb(struct nl_msg *msg, void *arg)
 	if (if_indextoname(hardif, ifname) == NULL)
 		return NL_OK;
 
-	opts->stats->originator_count = 0;
-
 	opts->stats->neighbor_count++;
 	if (!strncmp(ifname, "mesh-vpn", strlen(ifname))) {
 		opts->stats->vpn.tq = gluonutil_get_pseudo_tq(throughput);
@@ -250,8 +248,6 @@ int nw_get_batadv_neighbor_stats(struct nw_batadv_neighbor_stats *stats) {
 	if (ret < 0) {
 		return -1;
 	}
-
-	log_set_level(LL_DEBUG);
 
 	log_debug("nw_get_batadv_neighbor_stats() found algoname %s", algoname);
 	if (strcmp(algoname, "BATMAN_IV") == 0) {
