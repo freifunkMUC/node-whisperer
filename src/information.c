@@ -95,7 +95,7 @@ int node_whisperer_information_batman_adv_collect(uint8_t *buffer, size_t buffer
 		num_clients = 0;
 	} else {
 		num_clients = (uint16_t)ret;
-		log_debug("nw_get_batadv_clients() found %d clients", num_clients)
+		log_debug("nw_get_batadv_clients() found %d clients", num_clients);
 	}
 
 	buffer[0] = stats.vpn.connected ? 1 : 0;
