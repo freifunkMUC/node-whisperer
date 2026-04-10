@@ -270,6 +270,7 @@ int nw_get_batadv_neighbor_stats(struct nw_batadv_neighbor_stats *stats) {
 	}
 
 	if (ret < 0) {
+		log_error("Failed to query batman-adv originators: %d", ret);
 		return -1;
 	}
 
