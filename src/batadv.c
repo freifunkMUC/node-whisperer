@@ -265,7 +265,8 @@ int nw_get_batadv_neighbor_stats(struct nw_batadv_neighbor_stats *stats) {
 								parse_orig_v_list_netlink_cb, NLM_F_DUMP,
 								&opts.query_opts);
 	} else {
-		ret = -1;
+		log_error("Unknown batman-adv algorithm: %s", algoname);
+		return -1;
 	}
 
 	if (ret < 0) {
