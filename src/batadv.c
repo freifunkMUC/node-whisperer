@@ -111,7 +111,7 @@ static uint8_t gluonutil_get_pseudo_tq(uint32_t throughput)
 	return (uint8_t)((1.42459274279287898080 * log2(throughput) - 12.39555493934044793479) * 25.5);
 }
 
-// Batman V
+// Batman V - count originators only; neighbor/VPN detection uses BATADV_CMD_GET_NEIGHBORS
 static int parse_orig_v_list_netlink_cb(struct nl_msg *msg, void *arg)
 {
 	struct nlattr *attrs[BATADV_ATTR_MAX+1];
@@ -119,13 +119,9 @@ static int parse_orig_v_list_netlink_cb(struct nl_msg *msg, void *arg)
 	struct batadv_nlquery_opts *query_opts = arg;
 	struct genlmsghdr *ghdr;
 	struct neigh_netlink_opts *opts;
-	char ifname[IF_NAMESIZE];
-	uint32_t hardif;
-	uint32_t throughput;
-	char *orig, *dest;
 
 	opts = batadv_container_of(query_opts, struct neigh_netlink_opts,
-				   query_opts);
+							   query_opts);
 
 	if (!genlmsg_valid_hdr(nlh, 0))
 		return NL_OK;
@@ -136,23 +132,59 @@ static int parse_orig_v_list_netlink_cb(struct nl_msg *msg, void *arg)
 		return NL_OK;
 
 	if (nla_parse(attrs, BATADV_ATTR_MAX, genlmsg_attrdata(ghdr, 0),
-		      genlmsg_len(ghdr), batadv_genl_policy))
+				  genlmsg_len(ghdr), batadv_genl_policy))
 		return NL_OK;
 
 	if (batadv_genl_missing_attrs(attrs, parse_orig_v_list_mandatory,
-				      BATADV_ARRAY_SIZE(parse_orig_v_list_mandatory)))
-		return NL_OK;
-
-	hardif = nla_get_u32(attrs[BATADV_ATTR_HARD_IFINDEX]);
-	orig = nla_data(attrs[BATADV_ATTR_ORIG_ADDRESS]);
-	dest = nla_data(attrs[BATADV_ATTR_NEIGH_ADDRESS]);
-	throughput = nla_get_u32(attrs[BATADV_ATTR_THROUGHPUT]);
-
-	if (if_indextoname(hardif, ifname) == NULL)
+								  BATADV_ARRAY_SIZE(parse_orig_v_list_mandatory)))
 		return NL_OK;
 
 	opts->stats->originator_count++;
-	if (memcmp(orig, dest, 6) != 0)
+	return NL_OK;
+}
+
+// Batman V
+static const enum batadv_nl_attrs parse_neigh_list_mandatory[] = {
+	BATADV_ATTR_NEIGH_ADDRESS,
+	BATADV_ATTR_THROUGHPUT,
+	BATADV_ATTR_HARD_IFINDEX,
+	BATADV_ATTR_LAST_SEEN_MSECS,
+};
+
+// Batman V
+static int parse_neigh_list_netlink_cb(struct nl_msg *msg, void *arg) {
+	struct nlattr *attrs[BATADV_ATTR_MAX + 1];
+	struct nlmsghdr *nlh = nlmsg_hdr(msg);
+	struct batadv_nlquery_opts *query_opts = arg;
+	struct genlmsghdr *ghdr;
+	struct neigh_netlink_opts *opts;
+	char ifname[IF_NAMESIZE];
+	uint32_t hardif;
+	uint32_t throughput;
+
+	opts = batadv_container_of(query_opts, struct neigh_netlink_opts,
+				   query_opts);
+
+	if (!genlmsg_valid_hdr(nlh, 0))
+		return NL_OK;
+
+	ghdr = nlmsg_data(nlh);
+
+	if (ghdr->cmd != BATADV_CMD_GET_NEIGHBORS)
+		return NL_OK;
+
+	if (nla_parse(attrs, BATADV_ATTR_MAX, genlmsg_attrdata(ghdr, 0),
+		      genlmsg_len(ghdr), batadv_genl_policy))
+		return NL_OK;
+
+	if (batadv_genl_missing_attrs(attrs, parse_neigh_list_mandatory,
+								  BATADV_ARRAY_SIZE(parse_neigh_list_mandatory)))
+		return NL_OK;
+
+	throughput = nla_get_u32(attrs[BATADV_ATTR_THROUGHPUT]);
+	hardif = nla_get_u32(attrs[BATADV_ATTR_HARD_IFINDEX]);
+
+	if (if_indextoname(hardif, ifname) == NULL)
 		return NL_OK;
 
 	opts->stats->neighbor_count++;
@@ -253,8 +285,8 @@ int nw_get_batadv_neighbor_stats(struct nw_batadv_neighbor_stats *stats) {
 	if (ret < 0) {
 		return -1;
 	}
+	log_debug("Using algoname %s", algoname);
 
-	log_debug("nw_get_batadv_neighbor_stats() found algoname %s", algoname);
 	if (strcmp(algoname, "BATMAN_IV") == 0) {
 		ret = batadv_genl_query("bat0", BATADV_CMD_GET_ORIGINATORS,
 								parse_orig_list_netlink_cb, NLM_F_DUMP,
@@ -271,6 +303,17 @@ int nw_get_batadv_neighbor_stats(struct nw_batadv_neighbor_stats *stats) {
 
 	if (ret < 0) {
 		log_error("Failed to query batman-adv originators: %d", ret);
+		return -1;
+	}
+
+	if (strcmp(algoname, "BATMAN_V") == 0) {
+		opts.query_opts.err = 0;
+		ret = batadv_genl_query("bat0", BATADV_CMD_GET_NEIGHBORS,
+								parse_neigh_list_netlink_cb, NLM_F_DUMP,
+								&opts.query_opts);
+	}
+	if (ret < 0) {
+		log_error("Failed to query batman-adv neighbors: %d", ret);
 		return -1;
 	}
 
