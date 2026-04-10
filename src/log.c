@@ -38,7 +38,24 @@ static void log_vprintf(enum log_level level, const char *fmt, va_list args) {
 	fprintf(stderr, "\n");
 
 	if (use_syslog) {
-		vsyslog(LOG_INFO, fmt, args);
+		int priority;
+		switch (level) {
+		case LL_FATAL:
+		case LL_ERROR:
+			priority = LOG_ERR;
+			break;
+		case LL_WARNING:
+			priority = LOG_WARNING;
+			break;
+		case LL_INFO:
+			priority = LOG_INFO;
+			break;
+		case LL_DEBUG:
+		default:
+			priority = LOG_DEBUG;
+			break;
+		}
+		vsyslog(priority, fmt, args);
 	}
 }
 
