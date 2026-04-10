@@ -34,10 +34,12 @@ static void log_vprintf(enum log_level level, const char *fmt, va_list args) {
 		break;
 	}
 	fprintf(stderr, "[%s] ", level_str);
-	vfprintf(stderr, fmt, args);
-	fprintf(stderr, "\n");
-
 	if (use_syslog) {
+		va_list args_copy;
+		va_copy(args_copy, args);
+		vfprintf(stderr, fmt, args);
+		fprintf(stderr, "\n");
+
 		int priority;
 		switch (level) {
 		case LL_FATAL:
@@ -55,7 +57,11 @@ static void log_vprintf(enum log_level level, const char *fmt, va_list args) {
 			priority = LOG_DEBUG;
 			break;
 		}
-		vsyslog(priority, fmt, args);
+		vsyslog(priority, fmt, args_copy);
+		va_end(args_copy);
+	} else {
+		vfprintf(stderr, fmt, args);
+		fprintf(stderr, "\n");
 	}
 }
 
