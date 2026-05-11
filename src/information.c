@@ -83,11 +83,12 @@ int node_whisperer_information_node_id_collect(uint8_t *buffer, size_t buffer_si
 
 int node_whisperer_information_batman_adv_collect(uint8_t *buffer, size_t buffer_size) {
 	struct nw_batadv_neighbor_stats stats = {};
+	uint32_t tmp32;
 	uint16_t tmp;
 	uint16_t num_clients;
 	int ret;
 
-	if (buffer_size < 8) {
+	if (buffer_size < 12) {
 		return -1;
 	}
 
@@ -117,7 +118,10 @@ int node_whisperer_information_batman_adv_collect(uint8_t *buffer, size_t buffer
 	tmp = htons(num_clients);
 	memcpy(&buffer[6], &tmp, sizeof(tmp));
 
-	return 8;
+	tmp32 = htonl(stats.vpn.throughput);
+	memcpy(&buffer[8], &tmp32, sizeof(tmp32));
+
+	return 12;
 }
 
 int node_whisperer_information_uptime_collect(uint8_t *buffer, size_t buffer_size) {
@@ -266,13 +270,24 @@ int node_whisperer_information_node_id_parse(const uint8_t *ie_buf, size_t ie_le
 }
 
 int node_whisperer_information_batman_adv_parse(const uint8_t *ie_buf, size_t ie_len) {
+	uint32_t throughput = 0;
+	uint32_t tmp32;
 	uint16_t *tmp;
 
 	if (ie_len < 8)
 		return -1;
 
+	if (ie_len >= 12) {
+		memcpy(&tmp32, &ie_buf[8], sizeof(tmp32));
+		throughput = ntohl(tmp32);
+	}
+
 	printf("VPN connected: %s\n", ie_buf[0] ? "Yes" : "No");
-	printf("VPN-TQ: %d\n", ie_buf[1]);
+	if (throughput > 0)
+		printf("VPN throughput (kbps): %u\n", throughput);
+	else
+		printf("VPN-TQ: %d\n", ie_buf[1]);
+
 	tmp = (uint16_t *)&ie_buf[2];
 	printf("Originator count: %d\n", ntohs(*tmp));
 	tmp = (uint16_t *)&ie_buf[4];

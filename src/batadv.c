@@ -7,7 +7,6 @@
 #include <netlink/netlink.h>
 #include <netlink/genl/genl.h>
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -99,17 +98,6 @@ static int parse_orig_list_netlink_cb(struct nl_msg *msg, void *arg)
 	return NL_OK;
 }
 
-static uint8_t gluonutil_get_pseudo_tq(uint32_t throughput)
-{
-	if (throughput >= 54000)
-		return 255;
-
-	if (throughput < 417)
-		return 0;
-
-	return (uint8_t)((1.42459274279287898080 * log2(throughput) - 12.39555493934044793479) * 25.5);
-}
-
 // Batman V - count originators only; neighbor/VPN detection uses BATADV_CMD_GET_NEIGHBORS
 static int parse_orig_v_list_netlink_cb(struct nl_msg *msg, void *arg)
 {
@@ -159,7 +147,6 @@ static int parse_neigh_list_netlink_cb(struct nl_msg *msg, void *arg) {
 	struct neigh_netlink_opts *opts;
 	char ifname[IF_NAMESIZE];
 	uint32_t hardif;
-	uint32_t throughput;
 
 	opts = batadv_container_of(query_opts, struct neigh_netlink_opts,
 				   query_opts);
@@ -180,7 +167,6 @@ static int parse_neigh_list_netlink_cb(struct nl_msg *msg, void *arg) {
 								  BATADV_ARRAY_SIZE(parse_neigh_list_mandatory)))
 		return NL_OK;
 
-	throughput = nla_get_u32(attrs[BATADV_ATTR_THROUGHPUT]);
 	hardif = nla_get_u32(attrs[BATADV_ATTR_HARD_IFINDEX]);
 
 	if (if_indextoname(hardif, ifname) == NULL)
@@ -188,9 +174,10 @@ static int parse_neigh_list_netlink_cb(struct nl_msg *msg, void *arg) {
 
 	opts->stats->neighbor_count++;
 	if (!strncmp(ifname, "mesh-vpn", sizeof("mesh-vpn"))) {
-		opts->stats->vpn.tq = gluonutil_get_pseudo_tq(throughput);
+		opts->stats->vpn.throughput = nla_get_u32(attrs[BATADV_ATTR_THROUGHPUT]);
 		opts->stats->vpn.connected = 1;
 	}
+
 	return NL_OK;
 }
 

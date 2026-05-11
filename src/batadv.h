@@ -7,7 +7,8 @@ struct nw_batadv_neighbor_stats {
 	uint16_t neighbor_count;
 	struct {
 		int connected;
-		int tq;
+		int tq;                 /* Batman IV only */
+		uint32_t throughput;    /* Batman V only, kbps */
 	} vpn;
 };
 
