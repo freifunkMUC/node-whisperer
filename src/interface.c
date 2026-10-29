@@ -105,7 +105,7 @@ int nw_interface_add(struct ubus_context *ctx, int id, const char *name)
 	struct nw_interface *iface;
 	int ret;
 
-	iface = calloc(sizeof(*iface), 1);
+	iface = calloc(1, sizeof(*iface));
 	if (!iface) {
 		log_error("Failed to allocate memory for interface %s", name);
 		return -ENOMEM;

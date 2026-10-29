@@ -6,12 +6,12 @@
 #include <stddef.h>
 #include <errno.h>
 
+#include "ieee80211.h"
 #include "log.h"
 
-int ieee80211_information_elements_iterate(uint8_t *ie_buf, size_t ie_buf_len, int (*cb)(uint8_t *ie, size_t ie_len, void *data), void *data) {
+int ieee80211_information_elements_iterate(const uint8_t *ie_buf, size_t ie_buf_len, int (*cb)(const uint8_t *ie, size_t ie_len, void *data), void *data) {
 	size_t ie_remaining, ie_len;
-	uint8_t *ie;
-	int ret;
+	const uint8_t *ie;
 
 	ie = ie_buf;
 	ie_remaining = ie_buf_len;
@@ -25,8 +25,8 @@ int ieee80211_information_elements_iterate(uint8_t *ie_buf, size_t ie_buf_len, i
 		ie_len = ie[1];
 
 		log_debug("Process Information Element element=%d length=%d", ie[0], ie_len);
-		if (ie_len > ie_remaining) {
-			log_debug("Invalid Information Element length %d > %d", ie_len, ie_remaining);
+		if (ie_len > ie_remaining - 2) {
+			log_debug("Invalid Information Element length %d > %d", ie_len, ie_remaining - 2);
 			return -1;
 		}
 
@@ -37,7 +37,7 @@ int ieee80211_information_elements_iterate(uint8_t *ie_buf, size_t ie_buf_len, i
 
 		if (cb) {
 			log_debug("Hand over to callback");
-			if (cb(ie, ie_remaining, data) != 0)
+			if (cb(ie, ie_len + 2, data) != 0)
 				return -1;
 		}
 
@@ -47,6 +47,6 @@ int ieee80211_information_elements_iterate(uint8_t *ie_buf, size_t ie_buf_len, i
 	return 0;
 }
 
-int ieee80211_information_elements_validate(uint8_t *ie_buf, size_t ie_buf_len) {
+int ieee80211_information_elements_validate(const uint8_t *ie_buf, size_t ie_buf_len) {
 	return ieee80211_information_elements_iterate(ie_buf, ie_buf_len, NULL, NULL);
 }

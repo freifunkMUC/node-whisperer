@@ -117,7 +117,7 @@ static int nw_daemon_create_vendor_element_buf(struct nw *instance) {
 
 static void nw_daemon_collect_information(struct uloop_timeout *timeout) {
 	struct nw *instance = container_of(timeout, struct nw, update_timeout);
-	uint8_t *buf_hex = NULL;
+	char *buf_hex = NULL;
 
 	if (nw_daemon_create_vendor_element_buf(instance) < 0) {
 		goto out_free;
@@ -127,7 +127,7 @@ static void nw_daemon_collect_information(struct uloop_timeout *timeout) {
 	size_t buf_len = instance->output.len * 2 + 1;
 	buf_hex = malloc(buf_len);
 	if (!buf_hex) {
-		log_error("Failed to allocate %zu bytes for hex buffer", buf_len);
+		log_error("Failed to allocate memory for vendor element string");
 		goto out_free;
 	}
 
@@ -135,7 +135,7 @@ static void nw_daemon_collect_information(struct uloop_timeout *timeout) {
 
 	/* Update nodes */
 	log_debug("Update %s", buf_hex);
-	nw_interface_update(&instance->ubus_ctx, (char *)buf_hex);
+	nw_interface_update(&instance->ubus_ctx, buf_hex);
 
 	instance->statistics.update_count++;
 

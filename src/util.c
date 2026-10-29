@@ -7,25 +7,33 @@
 #include "log.h"
 
 int nw_read_file(char *path, char **buf, size_t *len) {
+	long size;
 	FILE *f = fopen(path, "rb");
 	if (!f) {
 		log_warning("Failed to open file %s: %s", path, strerror(errno));
 		return -1;
 	}
 	fseek(f, 0, SEEK_END);
-	*len = ftell(f);
+	size = ftell(f);
+	if (size < 0) {
+		fclose(f);
+		return -1;
+	}
+	*len = size;
 	fseek(f, 0, SEEK_SET);
-	*buf = malloc(*len);
+	/* Terminate the buffer so callers can treat it as a string */
+	*buf = malloc(*len + 1);
 	if (!*buf) {
 		log_error("Failed to allocate %zu bytes for file %s", *len, path);
 		fclose(f);
 		return -1;
 	}
-	size_t read_len = fread(*buf, 1, *len, f);
-	if (read_len != *len) {
-		log_warning("Short read for file %s: expected %zu bytes, got %zu", path, *len, read_len);
-		*len = read_len;
+	if (fread(*buf, 1, *len, f) != *len) {
+		free(*buf);
+		fclose(f);
+		return -1;
 	}
+	(*buf)[*len] = '\0';
 	fclose(f);
 	return 0;
 }
@@ -59,9 +67,9 @@ int nw_format_mac_address_string(const uint8_t *mac_address, char *mac_address_s
 	return 0;
 }
 
-int nw_buffer_to_hexstring(const uint8_t *buf, size_t len, uint8_t *hexstring) {
+int nw_buffer_to_hexstring(const uint8_t *buf, size_t len, char *hexstring) {
 	for (size_t i = 0; i < len; i++) {
-		sprintf((char *)&hexstring[i * 2], "%02x", buf[i]);
+		sprintf(&hexstring[i * 2], "%02x", buf[i]);
 	}
 	return 0;
 }
