@@ -7,6 +7,7 @@
 #include "log.h"
 
 int nw_read_file(char *path, char **buf, size_t *len) {
+	size_t read_len;
 	long size;
 	FILE *f = fopen(path, "rb");
 	if (!f) {
@@ -16,6 +17,7 @@ int nw_read_file(char *path, char **buf, size_t *len) {
 	fseek(f, 0, SEEK_END);
 	size = ftell(f);
 	if (size < 0) {
+		log_warning("Failed to get size of file %s: %s", path, strerror(errno));
 		fclose(f);
 		return -1;
 	}
@@ -28,7 +30,9 @@ int nw_read_file(char *path, char **buf, size_t *len) {
 		fclose(f);
 		return -1;
 	}
-	if (fread(*buf, 1, *len, f) != *len) {
+	read_len = fread(*buf, 1, *len, f);
+	if (read_len != *len) {
+		log_warning("Short read for file %s: expected %zu bytes, got %zu", path, *len, read_len);
 		free(*buf);
 		fclose(f);
 		return -1;
